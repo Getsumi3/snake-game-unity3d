@@ -5,9 +5,18 @@ using UnityEngine.SceneManagement;
 
 public class PlayerController : MonoBehaviour {
 
+    [Header("[Snake body]")]
     public Transform snake;
     public GameObject tailPrefab;
-    public float tickTime = 0.1f;
+    //public float maxTickTime = 0.1f;
+    //public float minTickTime = 0.05f;
+
+    [Header("[Audio settigs]")]
+    public AudioClip eatSfx;
+    public AudioClip dieSfx;
+    private AudioSource audioSource;
+    
+
 
     //default move direction
     private Vector2 dir = Vector2.up;
@@ -24,22 +33,24 @@ public class PlayerController : MonoBehaviour {
 
     void Start()
     {
-        InvokeRepeating("Move", 0f, tickTime);
-        GameManager.instance.InvokeRepeating("Spawn", 0, 3);
+
+        audioSource = GetComponent<AudioSource>();
+        InvokeRepeating("Move", 0f, GameManager.Instance.playerMaxSpeed);
+        GameSceneManager.instance.InvokeRepeating("Spawn", 0, GameManager.Instance.foodSpawnRate);
     }
 
     private void Update()
     {
-        hp -= Time.deltaTime * 1.25f;
-        GameManager.instance.hpTxt.text = "Health: " + hp.ToString("0");
+        hp -= Time.deltaTime * GameManager.Instance.playerHpRate;
+        GameSceneManager.instance.hpTxt.text = "Health: " + hp.ToString("0");
 
-        if (Input.GetAxis("Horizontal") > 0)
+        if (Input.GetAxis("Horizontal") > 0 && dir != Vector2.left)
             dir = Vector2.right;
-        else if (Input.GetAxis("Vertical") < 0)
+        else if (Input.GetAxis("Vertical") < 0 && dir != Vector2.up)
             dir = Vector2.down;
-        else if (Input.GetAxis("Horizontal") < 0)
+        else if (Input.GetAxis("Horizontal") < 0 && dir != Vector2.right)
             dir = Vector2.left;
-        else if (Input.GetAxis("Vertical") > 0)
+        else if (Input.GetAxis("Vertical") > 0 && dir != Vector2.down)
             dir = Vector2.up;
         
     }
@@ -75,38 +86,43 @@ public class PlayerController : MonoBehaviour {
         if (other.tag == "food")
         {
             //let's increase player speed when he eat
-            if (tickTime >= 0.03f)
+            if (GameManager.Instance.playerMaxSpeed >= GameManager.Instance.playerMinSpeed)
             {
-                tickTime -= 0.005f;
+                GameManager.Instance.playerMaxSpeed -= 0.005f;
                 CancelInvoke("Move");
-                InvokeRepeating("Move", 0f, tickTime);
+                InvokeRepeating("Move", 0f, GameManager.Instance.playerMaxSpeed);
             }
             grow = true;
-            score++;
+            score += 5;
             hp += 5;
             if (hp > 100)
             {
                 hp = 100;
             }
-            GameManager.instance.hpTxt.text = "Health: " + hp;
+            GameSceneManager.instance.hpTxt.text = "Health: " + hp;
             Destroy(other.gameObject);
-            GameManager.instance.Spawn();
+            GameSceneManager.instance.Spawn();
+            
+            audioSource.PlayOneShot(eatSfx);
         }
        
         else
         {
+            audioSource.clip = dieSfx;
+            audioSource.Play();
             GameOver();
         }
     }
 
     private void GameOver()
     {
-        GameManager.instance.gameOver = true;
+        GameSceneManager.instance.gameOver = true;
+        
         //get time on hit with collider, calculate and display final score
-        float finalTimer = GameManager.instance.timer;
+        float finalTimer = GameSceneManager.instance.timer;
+        print(finalTimer);
         float finalScore = finalTimer + score;
-        GameManager.instance.scoreTxt.text = "Your last: " + finalScore.ToString("0.#");
-
+        print(finalScore);
         //save final score
         PlayerPrefs.SetFloat("Last score", finalScore);
         if (finalScore > PlayerPrefs.GetFloat("Best score"))
@@ -115,6 +131,6 @@ public class PlayerController : MonoBehaviour {
         }
         PlayerPrefs.Save();
 
-        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+        SceneManager.LoadScene(0);
     }
 }

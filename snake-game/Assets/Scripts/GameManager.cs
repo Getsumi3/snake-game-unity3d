@@ -1,75 +1,54 @@
 ﻿using UnityEngine;
-using UnityEngine.UI;
 using UnityEngine.SceneManagement;
 
 public class GameManager : MonoBehaviour {
 
-    public static GameManager instance;
-    // Food Prefab
-    public GameObject foodPrefab;
-    //where in the hierrachy we will spawn our food
-    public Transform foodParent;
-
-    [Header("Borders")]
-    public Transform borderTop;
-    public Transform borderBottom;
-    public Transform borderLeft;
-    public Transform borderRight;
-
-    [Header("UI")]
-    public Text scoreTxt;
-    public Text lastScoreTxt;
-    public Text timeTxt;
-    public Text hpTxt;
-    public GameObject mainMenu;
-
     [HideInInspector]
-    public float timer = 0;
-    public bool gameOver = true;
+    public float playerHpRate;
+    [HideInInspector]
+    public float foodSpawnRate;
+    [HideInInspector]
+    public float playerMinSpeed, playerMaxSpeed;
+
+    public static GameManager Instance { get; private set; }
 
     private void Awake()
     {
-        instance = this;
-    }
-
-    void Start()
-    {
-        //get our last final score
-        scoreTxt.text = "Your best: " + PlayerPrefs.GetFloat("Best score").ToString("0.#");
-        lastScoreTxt.text = "Your last: " + PlayerPrefs.GetFloat("Last score").ToString("0.#");
-        hpTxt.text = "Health: " + 100;
-    }
-
-    private void Update()
-    {
-        if (!gameOver)
+        if (Instance == null)
         {
-            timer += Time.deltaTime;
-            timeTxt.text = "Time: " + timer.ToString("0.#");
+            Instance = this;
+            DontDestroyOnLoad(this.gameObject);
+        }
+        else
+        {
+            DestroyImmediate(this.gameObject);
         }
     }
 
-    // Spawn one piece of food
-    public void Spawn() {
-
-
-        int x = (int)Random.Range(borderLeft.position.x, borderRight.position.x);
-        int y = (int)Random.Range(borderBottom.position.y, borderTop.position.y);
-
-        Instantiate(foodPrefab, new Vector2(x, y), Quaternion.identity, foodParent);
+    public void Trigger_EasyGame()
+    {
+        playerHpRate = 1.25f;
+        foodSpawnRate = 3;
+        playerMaxSpeed = 0.15f;
+        playerMinSpeed = 0.08f;
+        SceneManager.LoadScene(1);
     }
 
-    public void Trigger_Start()
+    public void Trigger_NormalGame()
     {
-        mainMenu.SetActive(false);
-        gameOver = false;
+        playerHpRate = 1.5f;
+        foodSpawnRate = 5;
+        playerMaxSpeed = 0.08f;
+        playerMinSpeed = 0.05f;
+        SceneManager.LoadScene(1);
     }
 
-    public void Trigger_Exit()
+    public void Trigger_HardGame()
     {
-        Application.Quit();
-
-        //in case you'll want to reset saves
-        //PlayerPrefs.DeleteAll();
+        playerHpRate = 2f;
+        foodSpawnRate = 7;
+        playerMaxSpeed = 0.05f;
+        playerMinSpeed = 0.01f;
+        SceneManager.LoadScene(1);
     }
 }
